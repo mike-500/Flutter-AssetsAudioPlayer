@@ -46,6 +46,7 @@ enum ImageType {
   network,
   file,
   asset,
+  memory,
 }
 
 String imageTypeDescription(ImageType imageType) {
@@ -56,8 +57,39 @@ String imageTypeDescription(ImageType imageType) {
       return 'file';
     case ImageType.asset:
       return 'asset';
+    case ImageType.memory:
+      return 'memory';
   }
 }
+
+@immutable
+class MetasMemoryImage extends MetasImage {
+  const MetasMemoryImage({
+    required this.imageData,
+    String? package,
+  }) : super(
+          path: '',
+          type: ImageType.memory,
+          package: package,
+        );
+
+  final Uint8List imageData;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MetasMemoryImage &&
+          runtimeType == other.runtimeType &&
+          path == other.path &&
+          package == other.package &&
+          type == other.type &&
+          imageData == other.imageData;
+
+  @override
+  int get hashCode => path.hashCode ^ package.hashCode ^ type.hashCode ^ imageData.hashCode;
+}
+
+@immutable
 
 @immutable
 class MetasImage {
@@ -471,6 +503,7 @@ void writeAudioMetasInto(Map<String, dynamic> params, Metas? metas) {
     if (metas.id != null) {
       params['song.trackID'] = metas.id;
     }
+
   }
 }
 
@@ -481,6 +514,7 @@ void writeAudioImageMetasInto(
     params['song.image$suffix'] = metasImage.path;
     params['song.imageType$suffix'] = imageTypeDescription(metasImage.type);
     params.addIfNotNull('song.imagePackage$suffix', metasImage.package);
+    if (metasImage is MetasMemoryImage) params['song.imageData$suffix'] = metasImage.imageData;
   }
 }
 

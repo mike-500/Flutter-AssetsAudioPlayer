@@ -52,14 +52,16 @@ struct AudioMetas : Equatable {
     var image: String?
     var imageType: String?
     var imagePackage: String?
+    var imageData: FlutterStandardTypedData?
     
-    init(title: String?, artist: String?, album: String?, image: String?, imageType: String?, imagePackage: String?) {
+    init(title: String?, artist: String?, album: String?, image: String?, imageType: String?, imagePackage: String?, imageData: FlutterStandardTypedData?) {
         self.title = title
         self.artist = artist
         self.album = album
         self.image = image
         self.imageType = imageType
         self.imagePackage = imagePackage
+        self.imageData = imageData
     }
     
     static func ==(lhs: AudioMetas, rhs: AudioMetas) -> Bool {
@@ -69,7 +71,8 @@ struct AudioMetas : Equatable {
                 lhs.album == rhs.album &&
                 lhs.image == rhs.image &&
                 lhs.imageType == rhs.imageType &&
-                lhs.imagePackage == rhs.imagePackage
+                lhs.imagePackage == rhs.imagePackage &&
+                lhs.imageData == rhs.imageData
     }
 }
 
@@ -81,7 +84,7 @@ func fetchAudioMetas(from: NSDictionary) -> AudioMetas {
     let songImage = from["song.image"] as? String //can be null
     let songImageType = from["song.imageType"] as? String //can be null
     let songImagePackage = from["song.imagePackage"] as? String //can be null
-    
+    let songImageData = from["song.imageData"] as? FlutterStandardTypedData
     //end-metas
     
     let audioMetas = AudioMetas(
@@ -90,7 +93,8 @@ func fetchAudioMetas(from: NSDictionary) -> AudioMetas {
         album: songAlbum,
         image: songImage,
         imageType: songImageType,
-        imagePackage: songImagePackage
+        imagePackage: songImagePackage,
+        imageData: songImageData
     )
     
     return audioMetas
@@ -406,6 +410,21 @@ public class Player : NSObject, AVAudioPlayerDelegate {
                                                 })
                                                 MPNowPlayingInfoCenter.default().nowPlayingInfo = self.nowPlayingInfo
                                             }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else if(imageMetasType == "memory") {
+                        DispatchQueue.global().async {
+                            if let imageData = self.audioMetas?.imageData {
+                                if let image: UIImage = UIImage(data:Data(imageData.data)) {
+                                    DispatchQueue.main.async {
+                                        if(self.audioMetas == audioMetas){ //always the sam song ?
+                                            self.nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size, requestHandler: { (size) -> UIImage in
+                                                return image
+                                            })
+                                            MPNowPlayingInfoCenter.default().nowPlayingInfo = self.nowPlayingInfo
                                         }
                                     }
                                 }
